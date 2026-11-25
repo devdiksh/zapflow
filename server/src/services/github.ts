@@ -15,6 +15,41 @@ export function githubClient(accessToken: string) {
   return new Octokit({ auth: accessToken, userAgent: 'zapflow' });
 }
 
+export interface RepoSummary {
+  fullName: string;
+  private: boolean;
+  url: string;
+  pushedAt: string | null;
+}
+
+const MAX_REPO_PAGES = 5; // 500 repos is plenty for a picker
+
+/**
+ * Repos the user can attach a Zap to. Creating a webhook needs admin rights
+ * on the repo, so we only return those (and skip archived repos), most
+ * recently pushed first.
+ */
+export async function listAdminRepos(accessToken: string): Promise<RepoSummary[]> {
+  const octokit = githubClient(accessToken);
+  let pages = 0;
+  const repos = await octokit.paginate(
+    octokit.rest.repos.listForAuthenticatedUser,
+    { per_page: 100, sort: 'pushed', affiliation: 'owner,collaborator,organization_member' },
+    (response, done) => {
+      if (++pages >= MAX_REPO_PAGES) done();
+      return response.data;
+    },
+  );
+  return repos
+    .filter((repo) => repo.permissions?.admin && !repo.archived)
+    .map((repo) => ({
+      fullName: repo.full_name,
+      private: repo.private,
+      url: repo.html_url,
+      pushedAt: repo.pushed_at ?? null,
+    }));
+}
+
 export function githubAuthorizeUrl(state: string): string {
   const url = new URL('https://github.com/login/oauth/authorize');
   url.searchParams.set('client_id', env.GITHUB_CLIENT_ID);
