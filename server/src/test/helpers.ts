@@ -12,6 +12,7 @@ export function setTestEnv(overrides: Record<string, string> = {}) {
     GITHUB_CLIENT_SECRET: 'test-client-secret',
     WEBHOOK_PUBLIC_URL: 'https://smee.io/test-channel',
     GITHUB_WEBHOOK_SECRET: 'test-webhook-secret-0123456789',
+    ANTHROPIC_API_KEY: '', // tests never call Claude, even if the shell has a key
     ...overrides,
   });
 }

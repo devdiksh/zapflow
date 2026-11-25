@@ -51,6 +51,18 @@ describe('API routes (no database needed)', () => {
     assert.ok(body.apps.length >= 5, 'the picker should list several developer tools');
   });
 
+  it('reports Copilot as off without an API key, and drafting needs a session', async () => {
+    const status = await fetch(`${server.baseUrl}/api/copilot/status`);
+    assert.deepEqual(await status.json(), { enabled: false });
+
+    const draft = await fetch(`${server.baseUrl}/api/copilot/draft`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ prompt: 'When a PR is opened, comment thanks' }),
+    });
+    assert.equal(draft.status, 401);
+  });
+
   it('unknown API paths return a JSON 404', async () => {
     const res = await fetch(`${server.baseUrl}/api/nope`);
     assert.equal(res.status, 404);
