@@ -1,19 +1,30 @@
 import express, { type ErrorRequestHandler } from 'express';
+import type { Store } from 'express-session';
 
 import { HttpError } from './lib/http-error.js';
+import { sessionMiddleware } from './lib/session.js';
+import { authRouter } from './routes/auth.js';
+
+export interface AppOptions {
+  /** Session store. Production/dev pass a MongoStore; tests can omit it (in-memory). */
+  sessionStore?: Store;
+}
 
 /**
  * Builds the Express app without starting it, so tests can mount it directly.
  */
-export function createApp() {
+export function createApp({ sessionStore }: AppOptions = {}) {
   const app = express();
   app.disable('x-powered-by');
 
   app.use(express.json({ limit: '100kb' }));
+  app.use(sessionMiddleware(sessionStore));
 
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true });
   });
+
+  app.use('/api/auth', authRouter);
 
   app.use('/api', (_req, _res, next) => {
     next(new HttpError(404, 'Not found'));
