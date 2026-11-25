@@ -8,6 +8,7 @@ import { requireAuth } from './middleware/require-auth.js';
 import { appsRouter } from './routes/apps.js';
 import { authRouter } from './routes/auth.js';
 import { githubRouter } from './routes/github.js';
+import { webhooksRouter } from './routes/webhooks.js';
 import { zapsRouter } from './routes/zaps.js';
 
 export interface AppOptions {
@@ -21,6 +22,10 @@ export interface AppOptions {
 export function createApp({ sessionStore }: AppOptions = {}) {
   const app = express();
   app.disable('x-powered-by');
+
+  // Before express.json() and sessions: the webhook needs the raw body for its
+  // signature check, and it's called by GitHub, not by a signed-in browser.
+  app.use('/api/webhooks', webhooksRouter);
 
   app.use(express.json({ limit: '100kb' }));
   app.use(sessionMiddleware(sessionStore));
@@ -62,5 +67,14 @@ function toHttpError(err: unknown): HttpError {
     }
     return new HttpError(502, `GitHub request failed: ${err.message}`);
   }
+  // body-parser errors (malformed JSON, payload too large) carry a client status.
+  if (isClientError(err)) {
+    return new HttpError(err.status, err.message);
+  }
   return new HttpError(500, 'Something went wrong');
+}
+
+function isClientError(err: unknown): err is { status: number; message: string } {
+  const status = (err as { status?: unknown } | null)?.status;
+  return typeof status === 'number' && status >= 400 && status < 500 && err instanceof Error;
 }
