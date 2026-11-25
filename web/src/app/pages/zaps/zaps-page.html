@@ -4,7 +4,10 @@
       <h1>Zaps</h1>
       <p class="muted">A Zap runs an action automatically when its trigger happens.</p>
     </div>
-    <a class="btn btn-primary" routerLink="/zaps/new">+ Create Zap</a>
+    <div class="head-actions">
+      <a class="btn" routerLink="/zaps/new" [queryParams]="{ copilot: 1 }">✨ Build with Copilot</a>
+      <a class="btn btn-primary" routerLink="/zaps/new">+ Create Zap</a>
+    </div>
   </header>
 
   @if (actionError(); as message) {
