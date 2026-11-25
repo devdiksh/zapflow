@@ -1,9 +1,14 @@
 import express, { type ErrorRequestHandler } from 'express';
 import type { Store } from 'express-session';
+import { RequestError } from 'octokit';
 
 import { HttpError } from './lib/http-error.js';
 import { sessionMiddleware } from './lib/session.js';
+import { requireAuth } from './middleware/require-auth.js';
+import { appsRouter } from './routes/apps.js';
 import { authRouter } from './routes/auth.js';
+import { githubRouter } from './routes/github.js';
+import { zapsRouter } from './routes/zaps.js';
 
 export interface AppOptions {
   /** Session store. Production/dev pass a MongoStore; tests can omit it (in-memory). */
@@ -25,6 +30,9 @@ export function createApp({ sessionStore }: AppOptions = {}) {
   });
 
   app.use('/api/auth', authRouter);
+  app.use('/api/apps', appsRouter);
+  app.use('/api/zaps', requireAuth, zapsRouter);
+  app.use('/api/github', requireAuth, githubRouter);
 
   app.use('/api', (_req, _res, next) => {
     next(new HttpError(404, 'Not found'));
@@ -36,10 +44,23 @@ export function createApp({ sessionStore }: AppOptions = {}) {
 }
 
 const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
-  if (err instanceof HttpError) {
-    res.status(err.status).json({ error: err.message, details: err.details });
-    return;
+  const httpError = toHttpError(err);
+  if (httpError.status >= 500) {
+    console.error('Request failed:', err);
   }
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Something went wrong' });
+  res.status(httpError.status).json({ error: httpError.message, details: httpError.details });
 };
+
+function toHttpError(err: unknown): HttpError {
+  if (err instanceof HttpError) {
+    return err;
+  }
+  if (err instanceof RequestError) {
+    // The user's GitHub token was revoked or expired: they need to sign in again.
+    if (err.status === 401) {
+      return new HttpError(401, 'Your GitHub access has expired. Please sign in again.');
+    }
+    return new HttpError(502, `GitHub request failed: ${err.message}`);
+  }
+  return new HttpError(500, 'Something went wrong');
+}
