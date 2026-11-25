@@ -20,6 +20,18 @@ export const routes: Routes = [
         title: 'Zaps · ZapFlow',
         loadComponent: () => import('./pages/zaps/zaps-page').then((m) => m.ZapsPage),
       },
+      {
+        path: 'zaps/new',
+        title: 'New Zap · ZapFlow',
+        loadComponent: () =>
+          import('./pages/zap-builder/zap-builder-page').then((m) => m.ZapBuilderPage),
+      },
+      {
+        path: 'zaps/:id',
+        title: 'Edit Zap · ZapFlow',
+        loadComponent: () =>
+          import('./pages/zap-builder/zap-builder-page').then((m) => m.ZapBuilderPage),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'zaps' },
     ],
   },
