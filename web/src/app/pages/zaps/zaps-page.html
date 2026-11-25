@@ -1,0 +1,92 @@
+<div class="page">
+  <header class="head">
+    <div>
+      <h1>Zaps</h1>
+      <p class="muted">A Zap runs an action automatically when its trigger happens.</p>
+    </div>
+    <a class="btn btn-primary" routerLink="/zaps/new">+ Create Zap</a>
+  </header>
+
+  @if (actionError(); as message) {
+    <p class="error-banner" role="alert">{{ message }}</p>
+  }
+
+  @if (zaps.error()) {
+    <div class="card empty">
+      <p class="error-banner">{{ loadErrorMessage() }}</p>
+      <button type="button" class="btn" (click)="refresh()">Try again</button>
+    </div>
+  } @else if (zaps.isLoading() && !zaps.value().length) {
+    <div class="card empty muted">Loading your Zaps…</div>
+  } @else if (!zaps.value().length) {
+    <div class="card empty">
+      <h2>No Zaps yet</h2>
+      <p class="muted">
+        Start with the classic: when a pull request is opened on GitHub, post a comment thanking the
+        author.
+      </p>
+      <a class="btn btn-primary" routerLink="/zaps/new">Create your first Zap</a>
+    </div>
+  } @else {
+    <ul class="list">
+      @for (zap of zaps.value(); track zap.id) {
+        @let triggerApp = catalog.app(zap.trigger.app);
+        @let actionApp = catalog.app(zap.action.app);
+        <li class="card zap" [class.off]="!zap.enabled">
+          <div class="icons" aria-hidden="true">
+            @if (triggerApp) {
+              <app-app-icon [app]="triggerApp" [size]="28" />
+            }
+            <span class="arrow">→</span>
+            @if (actionApp) {
+              <app-app-icon [app]="actionApp" [size]="28" />
+            }
+          </div>
+
+          <div class="main">
+            <a class="name" [routerLink]="['/zaps', zap.id]">{{ zap.name }}</a>
+            <div class="summary">
+              {{ triggerLabel(zap) }} in <code>{{ zap.trigger.config.repo }}</code> → {{ actionLabel(zap) }}
+            </div>
+            @if (zap.lastRunStatus === 'error' && zap.lastRunError) {
+              <div class="run-error">Last run failed: {{ zap.lastRunError }}</div>
+            }
+          </div>
+
+          <div class="run">
+            @switch (zap.lastRunStatus) {
+              @case ('success') {
+                <span class="pill pill-success" [title]="zap.lastRunAt">✓ Ran {{ zap.lastRunAt | timeAgo }}</span>
+              }
+              @case ('error') {
+                <span class="pill pill-error" [title]="zap.lastRunAt">✕ Failed {{ zap.lastRunAt | timeAgo }}</span>
+              }
+              @default {
+                <span class="pill">Not run yet</span>
+              }
+            }
+          </div>
+
+          <app-toggle
+            [checked]="zap.enabled"
+            [disabled]="busy().has(zap.id)"
+            [label]="(zap.enabled ? 'Turn off ' : 'Turn on ') + zap.name"
+            (toggled)="toggle(zap, $event)"
+          />
+
+          <div class="row-actions">
+            <a class="btn btn-sm" [routerLink]="['/zaps', zap.id]">Edit</a>
+            <button
+              type="button"
+              class="btn btn-sm btn-danger"
+              [disabled]="busy().has(zap.id)"
+              (click)="remove(zap)"
+            >
+              Delete
+            </button>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</div>
