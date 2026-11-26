@@ -10,6 +10,8 @@ export function setTestEnv(overrides: Record<string, string> = {}) {
     SESSION_SECRET: 'test-session-secret-0123456789',
     GITHUB_CLIENT_ID: 'test-client-id',
     GITHUB_CLIENT_SECRET: 'test-client-secret',
+    WEBHOOK_PUBLIC_URL: 'https://smee.io/test-channel',
+    GITHUB_WEBHOOK_SECRET: 'test-webhook-secret-0123456789',
     ...overrides,
   });
 }
