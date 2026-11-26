@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 
-import { startTestServer } from '../test/helpers.js';
+import { startTestServer } from './test/helpers.js';
 
-describe('auth routes', () => {
+describe('API routes (no database needed)', () => {
   let server: Awaited<ReturnType<typeof startTestServer>>;
 
   before(async () => {
@@ -34,6 +34,21 @@ describe('auth routes', () => {
     });
     assert.equal(res.status, 302);
     assert.equal(res.headers.get('location'), 'http://localhost:4200/login?error=state_mismatch');
+  });
+
+  it('Zap and GitHub routes require a session', async () => {
+    for (const path of ['/api/zaps', '/api/github/repos']) {
+      const res = await fetch(`${server.baseUrl}${path}`);
+      assert.equal(res.status, 401, path);
+    }
+  });
+
+  it('serves the app catalog with GitHub as the only runnable app', async () => {
+    const res = await fetch(`${server.baseUrl}/api/apps`);
+    const body = (await res.json()) as { apps: { id: string; status: string }[] };
+    const available = body.apps.filter((app) => app.status === 'available').map((app) => app.id);
+    assert.deepEqual(available, ['github']);
+    assert.ok(body.apps.length >= 5, 'the picker should list several developer tools');
   });
 
   it('unknown API paths return a JSON 404', async () => {
