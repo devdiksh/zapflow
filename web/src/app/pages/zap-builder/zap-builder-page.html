@@ -1,0 +1,183 @@
+<div class="page">
+  <a routerLink="/zaps" class="back">← All Zaps</a>
+
+  @if (loadError(); as message) {
+    <div class="card notice">
+      <p class="error-banner">{{ message }}</p>
+      <a routerLink="/zaps" class="btn">Back to Zaps</a>
+    </div>
+  } @else if (loading()) {
+    <div class="card notice muted">Loading Zap…</div>
+  } @else {
+    <header class="top">
+      <div class="title">
+        <label class="sr-only" for="zap-name">Zap name</label>
+        <input
+          id="zap-name"
+          class="name-input"
+          [value]="name()"
+          (input)="name.set(nameInput.value)"
+          [placeholder]="suggestedName()"
+          maxlength="120"
+          #nameInput
+        />
+        <span class="muted">{{ isEdit() ? 'Editing Zap' : 'New Zap' }}</span>
+      </div>
+
+      <div class="controls">
+        <div class="onoff" [class.on]="enabled()">
+          <app-toggle [checked]="enabled()" label="Turn Zap on" (toggled)="enabled.set($event)" />
+          <span>{{ enabled() ? 'On' : 'Off' }}</span>
+        </div>
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="saving() || missing().length > 0"
+          [title]="missing().length ? 'Still needed: ' + missing().join(', ') : ''"
+          (click)="save()"
+        >
+          {{ saving() ? 'Saving…' : isEdit() ? 'Save changes' : 'Create Zap' }}
+        </button>
+      </div>
+    </header>
+
+    @if (saveError(); as message) {
+      <p class="error-banner save-error" role="alert">{{ message }}</p>
+    }
+
+    <!-- Step 1: trigger -->
+    <section class="card step" aria-labelledby="trigger-heading">
+      <div class="step-head">
+        <span class="badge">1</span>
+        <div>
+          <div class="kicker">Trigger</div>
+          <h2 id="trigger-heading">
+            @if (trigger(); as t) {
+              {{ triggerAppDef()?.name }}: {{ t.label }}
+            } @else {
+              When this happens…
+            }
+          </h2>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="label">App</span>
+        <app-app-picker
+          role="trigger"
+          [apps]="catalog.apps()"
+          [selected]="triggerApp()"
+          (selectedChange)="selectTriggerApp($event)"
+        />
+      </div>
+
+      @if (triggerAppDef(); as app) {
+        <div class="field">
+          <label class="label" for="trigger-event">Trigger event</label>
+          <select id="trigger-event" class="select" (change)="triggerEvent.set(eventSelect.value)" #eventSelect>
+            @for (t of app.triggers; track t.id) {
+              <option [value]="t.id" [selected]="t.id === triggerEvent()">{{ t.label }}</option>
+            }
+          </select>
+          @if (trigger()?.description; as description) {
+            <p class="hint">{{ description }}</p>
+          }
+        </div>
+
+        <div class="field">
+          <label class="label" for="repo">Repository</label>
+          <select
+            id="repo"
+            class="select"
+            [class.invalid]="fieldErrors()['trigger.config.repo']"
+            (change)="repo.set(repoSelect.value)"
+            #repoSelect
+          >
+            <option value="" disabled [selected]="!repo()">
+              {{ repos.isLoading() ? 'Loading your repositories…' : 'Select a repository…' }}
+            </option>
+            @for (name of repoOptions(); track name) {
+              <option [value]="name" [selected]="name === repo()">{{ name }}</option>
+            }
+          </select>
+          @if (fieldErrors()['trigger.config.repo']; as message) {
+            <p class="field-error">{{ message }}</p>
+          }
+          @if (repos.error()) {
+            <p class="field-error">
+              {{ reposErrorMessage() }}
+              <button type="button" class="link" (click)="repos.reload()">Retry</button>
+            </p>
+          } @else if (!repos.isLoading() && !repos.value().length) {
+            <p class="hint">No repositories found where you’re an admin. ZapFlow needs admin access to add a webhook.</p>
+          } @else {
+            <p class="hint">
+              Only repositories where you’re an admin are listed. While the Zap is on, ZapFlow keeps a
+              webhook on this repository.
+            </p>
+          }
+        </div>
+      }
+    </section>
+
+    <div class="connector" aria-hidden="true"></div>
+
+    <!-- Step 2: action -->
+    <section class="card step" aria-labelledby="action-heading">
+      <div class="step-head">
+        <span class="badge">2</span>
+        <div>
+          <div class="kicker">Action</div>
+          <h2 id="action-heading">
+            @if (action(); as a) {
+              {{ actionAppDef()?.name }}: {{ a.label }}
+            } @else {
+              Do this…
+            }
+          </h2>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="label">App</span>
+        <app-app-picker
+          role="action"
+          [apps]="catalog.apps()"
+          [selected]="actionApp()"
+          (selectedChange)="selectActionApp($event)"
+        />
+      </div>
+
+      @if (actionAppDef(); as app) {
+        <div class="field">
+          <label class="label" for="action-type">Action event</label>
+          <select id="action-type" class="select" (change)="actionType.set(actionSelect.value)" #actionSelect>
+            @for (a of app.actions; track a.id) {
+              <option [value]="a.id" [selected]="a.id === actionType()">{{ a.label }}</option>
+            }
+          </select>
+          @if (action()?.description; as description) {
+            <p class="hint">{{ description }}</p>
+          }
+        </div>
+
+        <div class="field">
+          <label class="label" for="template">Comment</label>
+          <app-template-editor inputId="template" [(value)]="template" [fields]="fields()" />
+          @if (fieldErrors()['action.config.template']; as message) {
+            <p class="field-error">{{ message }}</p>
+          }
+          <p class="hint">
+            Posted by
+            @if (auth.user(); as user) {
+              <strong>&#64;{{ user.login }}</strong>
+            } @else {
+              you
+            }
+            on the pull request that triggered the Zap. GitHub Markdown works.
+          </p>
+        </div>
+      }
+    </section>
+  }
+</div>
