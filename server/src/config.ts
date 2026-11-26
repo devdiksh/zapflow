@@ -30,6 +30,12 @@ const envSchema = z.object({
   WEBHOOK_PUBLIC_URL: z.url('set WEBHOOK_PUBLIC_URL to your smee.io channel (or other public URL)'),
   /** Shared secret GitHub uses to sign deliveries (X-Hub-Signature-256). */
   GITHUB_WEBHOOK_SECRET: z.string().min(16, 'GITHUB_WEBHOOK_SECRET must be at least 16 characters'),
+
+  /** Optional: enables the Copilot (natural language → draft Zap). Empty means off. */
+  ANTHROPIC_API_KEY: z
+    .string()
+    .optional()
+    .transform((value) => value?.trim() || undefined),
 });
 
 const parsed = envSchema.safeParse(process.env);

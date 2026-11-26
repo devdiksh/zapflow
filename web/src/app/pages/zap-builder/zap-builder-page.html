@@ -45,6 +45,10 @@
       <p class="error-banner save-error" role="alert">{{ message }}</p>
     }
 
+    @if (!isEdit()) {
+      <app-copilot-panel [autofocus]="!!copilot()" (drafted)="applyDraft($event)" />
+    }
+
     <!-- Step 1: trigger -->
     <section class="card step" aria-labelledby="trigger-heading">
       <div class="step-head">
@@ -90,7 +94,7 @@
             id="repo"
             class="select"
             [class.invalid]="fieldErrors()['trigger.config.repo']"
-            (change)="repo.set(repoSelect.value)"
+            (change)="selectRepo(repoSelect.value)"
             #repoSelect
           >
             <option value="" disabled [selected]="!repo()">

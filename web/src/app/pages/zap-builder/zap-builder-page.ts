@@ -9,18 +9,21 @@ import { Repo, ZapInput } from '../../core/models';
 import { ZapsService } from '../../core/zaps.service';
 import { Toggle } from '../../shared/toggle';
 import { AppPicker } from './app-picker';
+import { CopilotPanel } from './copilot-panel';
 import { TemplateEditor } from './template-editor';
 
 /** Create (/zaps/new) or edit (/zaps/:id) a Zap: name, on/off, trigger step, action step. */
 @Component({
   selector: 'app-zap-builder-page',
-  imports: [RouterLink, Toggle, AppPicker, TemplateEditor],
+  imports: [RouterLink, Toggle, AppPicker, TemplateEditor, CopilotPanel],
   templateUrl: './zap-builder-page.html',
   styleUrl: './zap-builder-page.scss',
 })
 export class ZapBuilderPage implements OnInit {
   /** Route param (withComponentInputBinding); absent on /zaps/new. */
   readonly id = input<string>();
+  /** `?copilot=1` from the list's "Build with Copilot" button focuses the Copilot prompt. */
+  readonly copilot = input<string>();
 
   private readonly zapsApi = inject(ZapsService);
   private readonly router = inject(Router);
@@ -107,6 +110,22 @@ export class ZapBuilderPage implements OnInit {
     }
   }
 
+  /** Loads a Copilot draft into the form. It stays off until the user turns it on. */
+  protected applyDraft(draft: ZapInput): void {
+    this.name.set(draft.name);
+    this.enabled.set(false);
+    this.triggerApp.set(draft.trigger.app);
+    this.triggerEvent.set(draft.trigger.event);
+    this.repo.set(draft.trigger.config.repo);
+    this.actionApp.set(draft.action.app);
+    this.actionType.set(draft.action.type);
+    this.template.set(draft.action.config.template);
+    this.saveError.set(null);
+    this.fieldErrors.set(
+      draft.trigger.config.repo ? {} : { 'trigger.config.repo': 'Pick the repository this Zap should watch.' },
+    );
+  }
+
   protected selectTriggerApp(appId: string | null): void {
     this.triggerApp.set(appId);
     this.triggerEvent.set(this.catalog.app(appId)?.triggers[0]?.id ?? null);
@@ -115,6 +134,11 @@ export class ZapBuilderPage implements OnInit {
   protected selectActionApp(appId: string | null): void {
     this.actionApp.set(appId);
     this.actionType.set(this.catalog.app(appId)?.actions[0]?.id ?? null);
+  }
+
+  protected selectRepo(repo: string): void {
+    this.repo.set(repo);
+    this.fieldErrors.update(({ ['trigger.config.repo']: _, ...rest }) => rest);
   }
 
   protected async save(): Promise<void> {

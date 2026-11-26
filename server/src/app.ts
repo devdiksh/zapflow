@@ -7,6 +7,7 @@ import { sessionMiddleware } from './lib/session.js';
 import { requireAuth } from './middleware/require-auth.js';
 import { appsRouter } from './routes/apps.js';
 import { authRouter } from './routes/auth.js';
+import { copilotRouter } from './routes/copilot.js';
 import { githubRouter } from './routes/github.js';
 import { webhooksRouter } from './routes/webhooks.js';
 import { zapsRouter } from './routes/zaps.js';
@@ -38,6 +39,7 @@ export function createApp({ sessionStore }: AppOptions = {}) {
   app.use('/api/apps', appsRouter);
   app.use('/api/zaps', requireAuth, zapsRouter);
   app.use('/api/github', requireAuth, githubRouter);
+  app.use('/api/copilot', copilotRouter);
 
   app.use('/api', (_req, _res, next) => {
     next(new HttpError(404, 'Not found'));
