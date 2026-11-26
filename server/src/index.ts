@@ -1,3 +1,4 @@
+import { MongoStore } from 'connect-mongo';
 import mongoose from 'mongoose';
 
 import { createApp } from './app.js';
@@ -7,7 +8,14 @@ async function main() {
   await mongoose.connect(env.MONGODB_URI);
   console.log(`Connected to MongoDB at ${env.MONGODB_URI}`);
 
-  const app = createApp();
+  // Sessions live in Mongo too (reusing the mongoose connection), so restarting
+  // the dev server doesn't sign everyone out.
+  const sessionStore = MongoStore.create({
+    client: mongoose.connection.getClient(),
+    collectionName: 'sessions',
+  });
+
+  const app = createApp({ sessionStore });
   const server = app.listen(env.PORT, () => {
     console.log(`ZapFlow API listening on http://localhost:${env.PORT}`);
   });

@@ -13,6 +13,15 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   MONGODB_URI: z.string().min(1).default('mongodb://localhost:27017/zapflow'),
   SESSION_SECRET: z.string().min(16, 'SESSION_SECRET must be at least 16 characters'),
+
+  /** Where the Angular app lives; we send the browser back here after login. */
+  APP_URL: z.url().default('http://localhost:4200'),
+
+  /** GitHub OAuth App credentials (github.com → Settings → Developer settings → OAuth Apps). */
+  GITHUB_CLIENT_ID: z.string().min(1, 'create a GitHub OAuth App and set its client id'),
+  GITHUB_CLIENT_SECRET: z.string().min(1, 'set the GitHub OAuth App client secret'),
+  /** Must match the OAuth App's "Authorization callback URL" exactly. Goes through the Angular proxy. */
+  GITHUB_CALLBACK_URL: z.url().default('http://localhost:4200/api/auth/github/callback'),
 });
 
 const parsed = envSchema.safeParse(process.env);
