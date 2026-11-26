@@ -1,5 +1,7 @@
 # ZapFlow
 
+**🎥 Demo video (3 min):** https://www.awesomescreenshot.com/video/58697336?key=d09cafd53ae09908efb230ddec3a1ca0 (sign in with GitHub → create the Zap → webhook appears on the repo → open a real PR → ZapFlow comments automatically).
+
 A small workflow automation app in the spirit of Zapier's Zaps: **a trigger plus an action**. You sign in with GitHub and build a Zap such as:
 
 > **When** a pull request is opened in `you/your-repo` → **comment** on that pull request: `Thanks @{{pr.author}} for opening "{{pr.title}}"! 🎉`
