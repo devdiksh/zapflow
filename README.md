@@ -276,7 +276,7 @@ The Angular UI was also driven in headless Chrome against a mock API: create, ed
 
 ## Time log
 
-> **Draft, confirm with Deekshant.** These times come from the first and last commit timestamps in `git log`. The span includes breaks.
+> These times come from the first and last commit timestamps in `git log`, so the span includes breaks. Every feature commit lands between 01:47 and 02:11; the gap after that covers local testing against a mock API, creating the GitHub OAuth App, the smee channel and the MongoDB Atlas database, the end-to-end test, and breaks. The last commit (07:49) is a small logging fix.
 
 | | 2026-11-26, IST | Commit |
 |---|---|---|
