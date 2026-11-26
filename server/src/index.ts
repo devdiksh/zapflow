@@ -6,7 +6,8 @@ import { env } from './config.js';
 
 async function main() {
   await mongoose.connect(env.MONGODB_URI);
-  console.log(`Connected to MongoDB at ${env.MONGODB_URI}`);
+  // Log where we connected, never the URI itself: it can carry a password (Atlas).
+  console.log(`Connected to MongoDB (${mongoose.connection.host}, database "${mongoose.connection.name}")`);
 
   // Sessions live in Mongo too (reusing the mongoose connection), so restarting
   // the dev server doesn't sign everyone out.
