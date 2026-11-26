@@ -133,9 +133,19 @@ Errors come back as `{ error, details? }`. Validation `details` are `{ path, mes
 
 ## Setup
 
-You need **Node 22** (`nvm use`), **Docker** (or a local MongoDB) and a GitHub account with a repo you're an admin of.
+You need **Node 22** (`nvm use`), a **MongoDB** (a free Atlas cluster, which is what I used, or Docker) and a GitHub account with a repo you're an admin of.
 
 **1. MongoDB**
+
+*Atlas (what I used):*
+1. Create a free cluster.
+2. **Database Access**: add a database user with a password.
+3. **Network Access**: add your current IP address.
+4. **Connect → Drivers**: copy the `mongodb+srv://…` connection string.
+5. Add the database name before the `?`, so it reads `…mongodb.net/zapflow?retryWrites=…`; otherwise the data lands in a database called `test`.
+6. URL-encode the password if it has special characters.
+
+*Or locally with Docker:*
 
 ```bash
 docker run -d --name zapflow-mongo -p 27017:27017 mongo:7
@@ -170,8 +180,9 @@ cp server/.env.example server/.env
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | from step 3 |
 | `WEBHOOK_PUBLIC_URL` | the smee channel URL from step 2 |
 | `GITHUB_WEBHOOK_SECRET` | another long random string |
+| `MONGODB_URI` | the Atlas connection string from step 1 (the default `mongodb://localhost:27017/zapflow` fits Docker) |
 | `ANTHROPIC_API_KEY` | optional, turns on the Copilot |
-| `MONGODB_URI`, `PORT`, `APP_URL`, `GITHUB_CALLBACK_URL` | defaults work locally |
+| `PORT`, `APP_URL`, `GITHUB_CALLBACK_URL` | defaults work locally |
 
 The server checks all of this at startup and tells you exactly what's missing.
 
@@ -259,35 +270,28 @@ cd web && npx ng build
 
 The Angular UI was also driven in headless Chrome against a mock API: create, edit, chip insertion at the cursor, the preview, the toggle error path and the Copilot flow.
 
+**End to end, against real GitHub.** With the setup above (an OAuth App, a smee channel and an Atlas cluster), I turned on a Zap for `devdiksh/zapflow-demo` and opened a pull request there. The comment was posted on it automatically. The Copilot hasn't been run against the live Claude API yet: no `ANTHROPIC_API_KEY` was set for that run.
+
 ---
 
 ## Time log
 
-- **Started:** 2026-11-26 01:46 IST
-- **Stopped:** _fill in_
+> **Draft, confirm with Deekshant.** These times come from the first and last commit timestamps in `git log`. The span includes breaks.
+
+| | 2026-11-26, IST | Commit |
+|---|---|---|
+| First commit | 01:47 | `d563ac3` chore: initial commit |
+| Last commit | 07:49 | `a96b258` fix(server): don't log the MongoDB connection string |
+| Elapsed | 6 h 02 min | wall clock, breaks included |
+
+There are no commits between 02:11 (`526ee16`, the end of the README branch) and 07:49. That stretch covers setting up the OAuth App, smee and Atlas, the end-to-end test, and breaks.
 
 ---
 
 ## How I used AI
 
-I worked with **Claude Code** as a pair programmer, the way I'd work with a teammate.
+I used **Claude Code** as a pair programmer.
 
-- **What I decided:**
-  - the stack and libraries
-  - the branch plan and commit conventions
-  - the Zap data model and the API surface
-  - the OAuth scopes and callback through the Angular proxy
-  - the UX: app picker with coming-soon apps, field chips, live preview, Copilot drafts that open disabled
-  - the rule to ask before adding big dependencies
-
-  I wrote that up as a brief before any code.
-- **What I delegated:** the implementation, branch by branch. Claude Code wrote the code, tests and commit messages, and explained its decisions as it went. Commits it authored carry a `Co-Authored-By: Claude` trailer.
-- **What came out of the pairing:** design points beyond the brief:
-  - one shared webhook per repo, removed only when no enabled Zap needs it
-  - creating the webhook before saving an enabled Zap
-  - `content_type: json` on the hook (GitHub defaults to form-encoded)
-  - the smee re-serialization caveat
-  - zod-validated GitHub payloads
-
-  It also found a real bug while driving the UI in headless Chrome: route guards called `inject()` after an `await`, which left signed-out users on a blank page (`fix(web): …`).
-- **What I checked myself:** _fill in (e.g. the end-to-end run against a real repo)._
+- **Me:** I set the plan, the stack and the git workflow (a branch per feature, Conventional Commits, merge commits into `main`), and reviewed each branch.
+- **Claude Code:** wrote most of the code, the tests and the commit messages. Its commits carry a `Co-Authored-By: Claude` trailer.
+- **Checked by me:** the end-to-end run on `devdiksh/zapflow-demo` (see [Tests](#tests)).
